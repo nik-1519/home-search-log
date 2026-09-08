@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Search Log</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Home Log">
+<meta name="theme-color" content="#2B2520">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjM2IiBmaWxsPSIjMkIyNTIwIi8+PHBhdGggZD0iTTkwIDM0IEwxNDYgODAgTDEzNCA4MCBMMTM0IDE0MiBMOTggMTQyIEw5OCAxMDggTDgyIDEwOCBMODIgMTQyIEw0NiAxNDIgTDQ2IDgwIEwzNCA4MCBaIiBmaWxsPSIjRjNFREREiIvPjwvc3ZnPg==">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3EDDF; --paper2:#EAE1C9; --paper3:#E1D5B4;
+    --ink:#2B2520; --ink2:#6B5F4F; --ink3:#8C8072;
+    --line:#C9BC9C; --line2:#B7A784;
+    --rust:#A8462F; --rustbg:#A8462F14;
+    --moss:#4F6444; --mossbg:#4F644414;
+    --slate:#3F5266; --slatebg:#3F526614;
+    --gold:#9C7A2E; --goldbg:#9C7A2E14;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper2) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper2) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%;
+    color:var(--ink);
+    font-family:'Public Sans', sans-serif;
+    font-size:14px;
+    line-height:1.55;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 18px;}
+
+  header{padding:28px 0 18px; border-bottom:2px solid var(--ink); margin-bottom:20px;}
+  .kicker{font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em; color:var(--ink3); text-transform:uppercase;}
+  h1{font-family:'Fraunces', serif; font-weight:500; font-size:26px; margin:4px 0 6px; color:var(--ink);}
+  .sub{font-size:12.5px; color:var(--ink2);}
+
+  .conn-row{display:flex; align-items:center; gap:6px; margin-top:10px;}
+  .conn-dot{width:7px; height:7px; border-radius:50%; background:var(--ink3); flex-shrink:0;}
+  .conn-dot.live{background:var(--moss);}
+  .conn-dot.err{background:var(--rust);}
+  .conn-text{font-size:11px; color:var(--ink3); font-family:'IBM Plex Mono',monospace;}
+
+  .who-row{display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;}
+  .who-label{font-size:11.5px; color:var(--ink2);}
+  .who-btn{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:5px 12px;
+    border:1px solid var(--line2); background:transparent; color:var(--ink2);
+    border-radius:3px; cursor:pointer;
+  }
+  .who-btn.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+  .tabs{display:flex; gap:0; margin-top:18px; border-bottom:1px solid var(--line2);}
+  .tab{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:9px 4px; margin-right:22px;
+    background:none; border:none; cursor:pointer; color:var(--ink3);
+    border-bottom:2px solid transparent; position:relative; top:1px;
+  }
+  .tab.active{color:var(--ink); border-bottom-color:var(--rust);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .stats{display:flex; gap:0; margin-bottom:22px; border:1px solid var(--line2); border-radius:4px; overflow:hidden;}
+  .stat{flex:1; padding:12px 14px; border-right:1px solid var(--line2);}
+  .stat:last-child{border-right:none;}
+  .stat-n{font-family:'IBM Plex Mono',monospace; font-size:19px; color:var(--ink);}
+  .stat-l{font-size:10.5px; color:var(--ink3); text-transform:uppercase; letter-spacing:.04em; margin-top:1px;}
+
+  .addbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;}
+  .section-label{font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink2);}
+  .btn{
+    font-family:'Public Sans', sans-serif; font-weight:600; font-size:13px;
+    padding:9px 16px; border-radius:3px; border:1px solid var(--ink); cursor:pointer;
+    background:var(--ink); color:var(--paper); white-space:nowrap;
+  }
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line2);}
+  .btn.small{padding:5px 10px; font-size:12px; font-weight:500;}
+  .btn.rust{background:var(--rust); border-color:var(--rust);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  .sortrow{display:flex; align-items:center; gap:8px; margin-bottom:14px;}
+  .sortrow label{font-size:11.5px; color:var(--ink2); white-space:nowrap;}
+  .sortrow select{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:6px 8px; border:1px solid var(--line2);
+    border-radius:3px; background:#fff; color:var(--ink);
+  }
+
+  .filters{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px;}
+  .chip{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:5px 11px;
+    border:1px solid var(--line2); border-radius:20px; cursor:pointer; color:var(--ink2); background:transparent;
+  }
+  .chip.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+  /* ---- quick add ---- */
+  .quickadd{display:flex; gap:8px; margin-bottom:18px; display:none;}
+  .quickadd.open{display:flex;}
+  .quickadd input{
+    flex:1; padding:10px 12px; border:1px solid var(--line2); border-radius:3px;
+    background:#fff; font-family:'Public Sans',sans-serif; font-size:13.5px; color:var(--ink);
+  }
+  .quickadd input:focus{outline:2px solid var(--slate); outline-offset:0;}
+  .quickadd-hint{font-size:11px; color:var(--ink3); margin:-12px 0 16px 2px; display:none;}
+  .quickadd-hint.open{display:block;}
+
+  /* ---- edit form ---- */
+  .form-card{
+    background:#FBF8EF; border:1px solid var(--line2); border-radius:6px;
+    padding:20px; margin-bottom:24px; display:none;
+  }
+  .form-card.open{display:block;}
+  .form-title{font-family:'Fraunces', serif; font-size:17px; margin-bottom:14px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  @media(max-width:520px){.grid4{grid-template-columns:1fr 1fr;}}
+  .field{margin-bottom:10px;}
+  .field label{display:block; font-size:11px; color:var(--ink2); margin-bottom:3px; text-transform:uppercase; letter-spacing:.03em;}
+  .field input, .field select{
+    width:100%; padding:8px 10px; border:1px solid var(--line2); border-radius:3px;
+    background:#fff; font-family:'Public Sans',sans-serif; font-size:13.5px; color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--slate); outline-offset:0;}
+  .form-actions{display:flex; gap:8px; margin-top:14px; justify-content:flex-end;}
+
+  /* ---- cards ---- */
+  .card{
+    border:1px solid var(--line2); border-radius:6px; background:#FBF8EF;
+    margin-bottom:14px; overflow:hidden;
+  }
+  .card-top{padding:16px 18px 12px; border-bottom:1px dashed var(--line2);}
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
+  .addr{font-family:'Fraunces', serif; font-size:17px; color:var(--ink); line-height:1.3;}
+  .addr a{color:var(--ink); text-decoration:none; border-bottom:1px solid var(--ink3);}
+  .price{font-family:'IBM Plex Mono',monospace; font-size:16px; color:var(--gold); white-space:nowrap;}
+  .meta-row{display:flex; gap:14px; margin-top:8px; flex-wrap:wrap; font-size:12.5px; color:var(--ink2);}
+  .meta-row .m span{font-family:'IBM Plex Mono',monospace; color:var(--ink);}
+  .meta-empty{font-size:12px; color:var(--ink3); font-style:italic; margin-top:6px;}
+
+  .badges{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+  .badge{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:3px 8px; border-radius:3px;
+    text-transform:uppercase; letter-spacing:.03em; border:1px solid transparent;
+  }
+  .badge.moss{background:var(--mossbg); color:var(--moss); border-color:#4F644433;}
+  .badge.rust{background:var(--rustbg); color:var(--rust); border-color:#A8462F33;}
+  .badge.slate{background:var(--slatebg); color:var(--slate); border-color:#3F526633;}
+  .badge.gold{background:var(--goldbg); color:var(--gold); border-color:#9C7A2E33;}
+  .badge.neutral{background:#00000009; color:var(--ink3); border-color:#00000014;}
+
+  .card-body{padding:14px 18px 16px;}
+  .notes-log{margin-bottom:10px;}
+  .note{display:flex; gap:8px; padding:7px 0; border-bottom:1px solid var(--paper2); font-size:13px;}
+  .note:last-child{border-bottom:none;}
+  .note-author{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink3); white-space:nowrap; padding-top:1px;}
+  .note-text{color:var(--ink); flex:1;}
+  .note-date{font-size:10.5px; color:var(--ink3); white-space:nowrap; padding-top:1px;}
+  .add-note{display:flex; gap:6px; margin-top:8px;}
+  .add-note input{flex:1; padding:7px 10px; border:1px solid var(--line2); border-radius:3px; font-size:13px; font-family:'Public Sans',sans-serif;}
+
+  .status-row{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .status-row select{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:5px 9px; border:1px solid var(--line2);
+    border-radius:3px; background:#fff; color:var(--ink);
+  }
+
+  /* ---- scoring ---- */
+  .score-block{border-top:1px dashed var(--line2); padding-top:12px; margin-top:12px;}
+  .score-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .score-title{font-family:'IBM Plex Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink2);}
+  .score-total{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink);}
+  .score-total.pending{color:var(--ink3); font-style:italic; text-transform:none; letter-spacing:0;}
+  .score-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  @media(max-width:520px){.score-grid{grid-template-columns:1fr 1fr;}}
+  .score-field label{display:block; font-size:10.5px; color:var(--ink2); margin-bottom:3px; line-height:1.25;}
+  .score-field input{
+    width:100%; padding:6px 8px; border:1px solid var(--line2); border-radius:3px;
+    background:#fff; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink); text-align:center;
+  }
+
+  .empty{text-align:center; padding:50px 20px; color:var(--ink2); border:1px dashed var(--line2); border-radius:6px;}
+  .empty .big{font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:6px;}
+
+  .icon-btn{background:none; border:none; cursor:pointer; color:var(--ink3); font-size:13px; font-family:'IBM Plex Mono',monospace; padding:4px 6px;}
+  .icon-btn:hover{color:var(--rust);}
+
+  footer{margin-top:30px; padding-top:16px; border-top:1px solid var(--line); font-size:11px; color:var(--ink3); text-align:center;}
+
+  /* ---- criteria tab ---- */
+  .crit-section{border:1px solid var(--line2); border-radius:6px; background:#FBF8EF; padding:18px 20px; margin-bottom:18px;}
+  .crit-title{font-family:'Fraunces', serif; font-size:16px; margin-bottom:4px;}
+  .crit-sub{font-size:12px; color:var(--ink2); margin-bottom:16px; line-height:1.5;}
+  .slider-row{margin-bottom:16px;}
+  .slider-row:last-child{margin-bottom:0;}
+  .slider-row-label{display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink); margin-bottom:5px;}
+  .slider-val{font-family:'IBM Plex Mono',monospace; color:var(--rust);}
+  input[type="range"]{width:100%; accent-color:var(--rust); height:4px; cursor:pointer;}
+  .weight-total-row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;}
+  .weight-total{font-family:'IBM Plex Mono',monospace; font-size:13px; padding:3px 9px; border-radius:3px;}
+  .weight-total.ok{background:var(--mossbg); color:var(--moss);}
+  .weight-total.warn{background:var(--rustbg); color:var(--rust);}
+  .zone-band-row{display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:8px; align-items:center; margin-bottom:10px;}
+  .zone-band-row:last-child{margin-bottom:0;}
+  .zone-band-label{font-size:12.5px; color:var(--ink);}
+  .zone-band-row input{
+    width:100%; padding:7px 9px; border:1px solid var(--line2); border-radius:3px;
+    background:#fff; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink);
+  }
+  .zone-band-head{display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:8px; margin-bottom:8px;}
+  .zone-band-head span{font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink3);}
+  .crit-savebar{display:flex; justify-content:flex-end; align-items:center; gap:10px;}
+  .crit-savenote{font-size:11.5px; color:var(--ink3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Goverdhan · Bareria — house hunt</div>
+    <h1>Home Search Log</h1>
+    <div class="sub">Track homes to visit, homes you've seen, and notes from each — synced live between both phones.</div>
+    <div class="conn-row">
+      <div class="conn-dot" id="connDot"></div>
+      <div class="conn-text" id="connText">Connecting…</div>
+    </div>
+    <div class="who-row">
+      <span class="who-label">Logging in as:</span>
+      <button class="who-btn active" id="whoNikhil" onclick="setWho('Nikhil')">Nikhil</button>
+      <button class="who-btn" id="whoPallavi" onclick="setWho('Pallavi')">Pallavi</button>
+      <span style="flex:1"></span>
+      <button class="btn ghost small" onclick="exportData()">Export backup</button>
+      <button class="btn ghost small" onclick="document.getElementById('importFile').click()">Import</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
+    </div>
+    <div class="sub" id="backupNote" style="margin-top:6px; color:var(--ink3);"></div>
+
+    <div class="tabs">
+      <button class="tab active" id="tabHomes" onclick="setTab('homes')">Homes</button>
+      <button class="tab" id="tabCriteria" onclick="setTab('criteria')">Criteria</button>
+    </div>
+  </header>
+
+  <!-- ══════════ HOMES TAB ══════════ -->
+  <div class="tab-panel active" id="panel-homes">
+
+    <div class="stats" id="stats"></div>
+
+    <div class="addbar">
+      <div class="section-label" id="listLabel">All homes</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn ghost" id="addToggleBtn" onclick="toggleQuickAdd()">+ Add home</button>
+      </div>
+    </div>
+
+    <div class="quickadd" id="quickAdd">
+      <input type="text" id="qa_input" placeholder="Paste a Redfin link or type an address" onkeydown="if(event.key==='Enter') quickAddHome()">
+      <button class="btn" onclick="quickAddHome()">Add</button>
+      <button class="btn ghost" onclick="toggleQuickAdd()">Cancel</button>
+    </div>
+    <div class="quickadd-hint" id="quickAddHint">That's it — fill in beds/baths/price/zone later from the card's Edit button once you have them.</div>
+
+    <div class="sortrow">
+      <label for="sortSel">Sort</label>
+      <select id="sortSel" onchange="setSort(this.value)">
+        <option value="recent">Recently added</option>
+        <option value="price_asc">Price — low to high</option>
+        <option value="price_desc">Price — high to low</option>
+        <option value="score_desc">Weighted score — high to low</option>
+      </select>
+    </div>
+
+    <div class="filters" id="filters"></div>
+
+    <!-- Edit form -->
+    <div class="form-card" id="formCard">
+      <div class="form-title">Edit home details</div>
+      <div class="field">
+        <label>Address</label>
+        <input type="text" id="f_address" placeholder="123 NE Somewhere St, Redmond, WA">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>List price ($)</label>
+          <input type="text" inputmode="numeric" id="f_price" placeholder="1,850,000">
+        </div>
+        <div class="field">
+          <label>HS zone</label>
+          <select id="f_zone">
+            <option value="">Select zone…</option>
+            <option value="Redmond HS">Redmond HS</option>
+            <option value="Lake Washington HS">Lake Washington HS</option>
+            <option value="Newport HS">Newport HS</option>
+            <option value="Interlake HS">Interlake HS</option>
+            <option value="Other">Other / outside target zones</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid4">
+        <div class="field"><label>Beds</label><input type="text" inputmode="numeric" id="f_beds" placeholder="4"></div>
+        <div class="field"><label>Baths</label><input type="text" inputmode="decimal" id="f_baths" placeholder="2.5"></div>
+        <div class="field"><label>Sqft</label><input type="text" inputmode="numeric" id="f_sqft" placeholder="2200"></div>
+        <div class="field"><label>Lot sqft</label><input type="text" inputmode="numeric" id="f_lot" placeholder="8500"></div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>MS feeder (if known — e.g. Tyee / Tillicum)</label>
+          <input type="text" id="f_ms" placeholder="Tyee MS">
+        </div>
+        <div class="field">
+          <label>Listing link</label>
+          <input type="text" id="f_link" placeholder="https://redfin.com/...">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn ghost" onclick="closeForm()">Cancel</button>
+        <button class="btn" onclick="saveHome()">Save changes</button>
+      </div>
+    </div>
+
+    <div id="list"></div>
+
+    <div class="crit-section" style="margin-top:10px;">
+      <div class="crit-title">Redfin quick-add bookmarklet</div>
+      <div class="crit-sub">While viewing a Redfin listing page in Safari, tap this to pull beds, baths, sqft, lot, price, year built, and the assigned high/middle school straight into this log — no typing. It reads whatever Redfin has displayed on the page, so it can occasionally miss a field if Redfin changes their layout; anything it misses you can fill in from Edit.</div>
+
+      <div style="font-size:12.5px; color:var(--ink); margin-bottom:10px; line-height:1.6;">
+        <strong>Set up once on iOS (Safari doesn't support dragging to a bookmarks bar):</strong><br>
+        1. Bookmark any page first — tap Share → Add Bookmark.<br>
+        2. Go to Bookmarks, tap Edit, tap that new bookmark.<br>
+        3. Rename it "Add to Home Log," then replace the Address field with the code below (tap Copy, then paste over the URL).<br>
+        4. Save. From now on, open a Redfin listing → tap the address bar → type "Add to Home Log" → tap it.
+      </div>
+
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <a id="bookmarkletLink" href="#" class="btn ghost small" onclick="return false;" ondragstart="return true;" style="text-decoration:none;">↳ Drag to bookmarks bar (desktop)</a>
+        <button class="btn small" onclick="copyBookmarklet()">Copy code (for iOS)</button>
+        <span class="crit-savenote" id="bookmarkletCopyNote"></span>
+      </div>
+    </div>
+
+    <footer>Synced live via Firebase — updates from either phone appear automatically, no refresh needed. Verify any zone at the address level with LWSD/BSD before offering.</footer>
+  </div>
+
+  <!-- ══════════ CRITERIA TAB ══════════ -->
+  <div class="tab-panel" id="panel-criteria">
+
+    <div class="crit-section">
+      <div class="crit-title">Hard spec minimums</div>
+      <div class="crit-sub">A home is only marked "Meets spec" once beds, baths, sqft, and lot are all filled in on its card and every one clears the minimum below.</div>
+
+      <div class="slider-row">
+        <div class="slider-row-label"><span>Min beds</span><span class="slider-val" id="val_minBeds">4</span></div>
+        <input type="range" id="sl_minBeds" min="0" max="7" step="1" oninput="onCriteriaSliderInput()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-row-label"><span>Min baths</span><span class="slider-val" id="val_minBaths">2.5</span></div>
+        <input type="range" id="sl_minBaths" min="0" max="6" step="0.5" oninput="onCriteriaSliderInput()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-row-label"><span>Min interior sqft</span><span class="slider-val" id="val_minSqft">2,000</span></div>
+        <input type="range" id="sl_minSqft" min="0" max="6000" step="50" oninput="onCriteriaSliderInput()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-row-label"><span>Min lot sqft</span><span class="slider-val" id="val_minLot">8,000</span></div>
+        <input type="range" id="sl_minLot" min="0" max="20000" step="250" oninput="onCriteriaSliderInput()">
+      </div>
+    </div>
+
+    <div class="crit-section">
+      <div class="crit-title">Price bands by zone</div>
+      <div class="crit-sub">Used for the "In price band" badge and stat. Dollar ranges are precise enough that these stay as typed numbers rather than sliders.</div>
+      <div class="zone-band-head"><span>Zone</span><span>Low</span><span>High</span></div>
+      <div id="zoneBandRows"></div>
+    </div>
+
+    <div class="crit-section">
+      <div class="crit-title">Weighted scoring model</div>
+      <div class="crit-sub">Rate each toured home 0–10 on these four dimensions on its card. These weights combine those ratings into one comparable score out of 100.</div>
+      <div class="weight-total-row">
+        <span class="section-label">Weights</span>
+        <span class="weight-total ok" id="weightTotal">Total: 100%</span>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-row-label"><span>School quality</span><span class="slider-val" id="val_wSchool">41%</span></div>
+        <input type="range" id="sl_wSchool" min="0" max="100" step="1" oninput="onCriteriaSliderInput()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-row-label"><span>Quality of life</span><span class="slider-val" id="val_wLife">29%</span></div>
+        <input type="range" id="sl_wLife" min="0" max="100" step="1" oninput="onCriteriaSliderInput()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-row-label"><span>Home configuration</span><span class="slider-val" id="val_wConfig">18%</span></div>
+        <input type="range" id="sl_wConfig" min="0" max="100" step="1" oninput="onCriteriaSliderInput()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-row-label"><span>Work / commute proximity</span><span class="slider-val" id="val_wWork">12%</span></div>
+        <input type="range" id="sl_wWork" min="0" max="100" step="1" oninput="onCriteriaSliderInput()">
+      </div>
+    </div>
+
+    <div class="crit-savebar">
+      <span class="crit-savenote" id="critSaveNote"></span>
+      <button class="btn ghost" onclick="resetCriteriaDefaults()">Reset to defaults</button>
+      <button class="btn" onclick="saveCriteria()">Save criteria</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Firebase (compat SDK — no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBNTHZWX07oIOu05VnXpgflNXByQPJG9yY",
+  authDomain: "home-search-12693.firebaseapp.com",
+  projectId: "home-search-12693",
+  storageBucket: "home-search-12693.firebasestorage.app",
+  messagingSenderId: "460077409430",
+  appId: "1:460077409430:web:bc41ad162d02e2c22d0eb7"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const homesCol = db.collection('homes');
+const criteriaDoc = db.collection('config').doc('criteria');
+const FieldValue = firebase.firestore.FieldValue;
+
+const DEFAULT_ZONES = {
+  "Redmond HS": [1600000, 2000000],
+  "Lake Washington HS": [1750000, 2150000],
+  "Newport HS": [1850000, 2250000],
+  "Interlake HS": [1950000, 2350000],
+};
+const DEFAULT_CRITERIA = {
+  minBeds: 4, minBaths: 2.5, minSqft: 2000, minLot: 8000,
+  zones: JSON.parse(JSON.stringify(DEFAULT_ZONES)),
+  weights: { schoolQuality: 41, qualityOfLife: 29, homeConfig: 18, workProximity: 12 },
+};
+const STATUSES = ["Not yet toured","Tour requested","Tour scheduled","Toured","Passed","Offer made"];
+const SCORE_DIMS = [
+  { key:"schoolQuality", label:"School quality" },
+  { key:"qualityOfLife", label:"Quality of life" },
+  { key:"homeConfig", label:"Home config" },
+  { key:"workProximity", label:"Work proximity" },
+];
+
+let homes = [];
+let criteria = JSON.parse(JSON.stringify(DEFAULT_CRITERIA));
+let currentWho = "Nikhil";
+let activeFilter = "All";
+let activeSort = "recent";
+let editingId = null;
+let criteriaLoadedOnce = false;
+
+function setConn(state, text){
+  const dot = document.getElementById('connDot');
+  dot.classList.remove('live','err');
+  if(state) dot.classList.add(state);
+  document.getElementById('connText').textContent = text;
+}
+
+function setWho(name){
+  currentWho = name;
+  document.getElementById('whoNikhil').classList.toggle('active', name==='Nikhil');
+  document.getElementById('whoPallavi').classList.toggle('active', name==='Pallavi');
+}
+
+function setTab(name){
+  document.getElementById('tabHomes').classList.toggle('active', name==='homes');
+  document.getElementById('tabCriteria').classList.toggle('active', name==='criteria');
+  document.getElementById('panel-homes').classList.toggle('active', name==='homes');
+  document.getElementById('panel-criteria').classList.toggle('active', name==='criteria');
+}
+
+function num(v){
+  const n = parseFloat(String(v).replace(/[^0-9.]/g,''));
+  return isNaN(n) ? null : n;
+}
+function fmtMoney(n){
+  if(n===null||n===undefined) return '—';
+  return '$'+Math.round(n).toLocaleString();
+}
+function uid(){ return 'h_'+Date.now()+'_'+Math.floor(Math.random()*10000); }
+
+/* ── Firestore realtime wiring ────────────────────────────────────── */
+homesCol.onSnapshot(
+  snap => {
+    homes = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
+    setConn('live','Live');
+    render();
+  },
+  err => {
+    console.error('homes listener error', err);
+    setConn('err','Connection error — check Firestore rules / network');
+  }
+);
+
+criteriaDoc.onSnapshot(
+  doc => {
+    if(doc.exists){
+      const loaded = doc.data();
+      criteria = Object.assign(JSON.parse(JSON.stringify(DEFAULT_CRITERIA)), loaded);
+      criteria.zones = Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZONES)), loaded.zones||{});
+      criteria.weights = Object.assign({}, DEFAULT_CRITERIA.weights, loaded.weights||{});
+    } else if(!criteriaLoadedOnce){
+      // First run — seed Firestore with defaults so both phones start aligned
+      criteriaDoc.set(DEFAULT_CRITERIA).catch(e=>console.error('seed criteria failed', e));
+    }
+    criteriaLoadedOnce = true;
+    populateCriteriaControls();
+    render();
+  },
+  err => {
+    console.error('criteria listener error', err);
+    setConn('err','Connection error — check Firestore rules / network');
+  }
+);
+
+/* ── Quick add (address or Redfin link only) ──────────────────────── */
+function toggleQuickAdd(){
+  const box = document.getElementById('quickAdd');
+  const hint = document.getElementById('quickAddHint');
+  const open = !box.classList.contains('open');
+  box.classList.toggle('open', open);
+  hint.classList.toggle('open', open);
+  if(open){
+    document.getElementById('qa_input').value = '';
+    document.getElementById('qa_input').focus();
+  }
+}
+
+function parseRedfinAddress(url){
+  try{
+    const u = new URL(url);
+    if(!u.hostname.toLowerCase().includes('redfin.com')) return null;
+    const parts = u.pathname.split('/').filter(Boolean);
+    const homeIdx = parts.findIndex(p => p.toLowerCase()==='home' || p.toLowerCase()==='unit');
+    const slugIdx = homeIdx > 0 ? homeIdx-1 : parts.length-1;
+    const slug = parts[slugIdx];
+    const city = parts.length > 1 ? parts[1] : '';
+    const state = parts.length > 0 ? parts[0] : '';
+    if(!slug) return null;
+    const addr = slug.replace(/-/g,' ').trim();
+    const cityClean = city.replace(/-/g,' ').trim();
+    if(!addr) return null;
+    return [addr, cityClean, state].filter(Boolean).join(', ');
+  }catch(e){
+    return null;
+  }
+}
+
+async function quickAddHome(){
+  const raw = document.getElementById('qa_input').value.trim();
+  if(!raw){ alert('Paste a Redfin link or type an address first.'); return; }
+
+  let address = raw;
+  let link = '';
+  if(/^https?:\/\//i.test(raw)){
+    link = raw;
+    const parsed = parseRedfinAddress(raw);
+    address = parsed || raw;
+  }
+
+  const id = uid();
+  const home = {
+    address, link,
+    price:null, zone:'', beds:null, baths:null, sqft:null, lot:null, ms:'',
+    status: STATUSES[0],
+    notes: [],
+    scores: {},
+    addedBy: currentWho,
+    addedDate: new Date().toISOString(),
+  };
+  try{
+    await homesCol.doc(id).set(home);
+    toggleQuickAdd();
+  }catch(e){
+    console.error(e);
+    alert('Could not save — check your connection and try again.');
+  }
+}
+
+/* ── Edit form ─────────────────────────────────────────────────────── */
+function closeForm(){
+  document.getElementById('formCard').classList.remove('open');
+  editingId = null;
+}
+
+function editHome(id){
+  const h = homes.find(x=>x.id===id);
+  if(!h) return;
+  editingId = id;
+  document.getElementById('f_address').value = h.address||'';
+  document.getElementById('f_price').value = h.price||'';
+  document.getElementById('f_zone').value = h.zone||'';
+  document.getElementById('f_beds').value = h.beds||'';
+  document.getElementById('f_baths').value = h.baths||'';
+  document.getElementById('f_sqft').value = h.sqft||'';
+  document.getElementById('f_lot').value = h.lot||'';
+  document.getElementById('f_ms').value = h.ms||'';
+  document.getElementById('f_link').value = h.link||'';
+  document.getElementById('formCard').classList.add('open');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function saveHome(){
+  if(!editingId) return;
+  const address = document.getElementById('f_address').value.trim();
+  if(!address){ alert('Address can\'t be empty.'); return; }
+  const data = {
+    address,
+    price: num(document.getElementById('f_price').value),
+    zone: document.getElementById('f_zone').value,
+    beds: num(document.getElementById('f_beds').value),
+    baths: num(document.getElementById('f_baths').value),
+    sqft: num(document.getElementById('f_sqft').value),
+    lot: num(document.getElementById('f_lot').value),
+    ms: document.getElementById('f_ms').value.trim(),
+    link: document.getElementById('f_link').value.trim(),
+  };
+  try{
+    await homesCol.doc(editingId).update(data);
+    closeForm();
+  }catch(e){
+    console.error(e);
+    alert('Could not save — check your connection and try again.');
+  }
+}
+
+async function deleteHome(id){
+  if(!confirm('Remove this home from the log?')) return;
+  try{
+    await homesCol.doc(id).delete();
+  }catch(e){
+    console.error(e);
+    alert('Could not remove — check your connection and try again.');
+  }
+}
+
+async function updateStatus(id, status){
+  try{
+    await homesCol.doc(id).update({status});
+  }catch(e){
+    console.error(e);
+    alert('Could not update status — check your connection and try again.');
+  }
+}
+
+async function addNote(id){
+  const input = document.getElementById('noteinput_'+id);
+  const text = input.value.trim();
+  if(!text) return;
+  const note = {author: currentWho, text, date: new Date().toISOString()};
+  try{
+    await homesCol.doc(id).update({ notes: FieldValue.arrayUnion(note) });
+    input.value='';
+  }catch(e){
+    console.error(e);
+    alert('Could not save note — check your connection and try again.');
+  }
+}
+
+async function updateScore(id, dim, value){
+  const v = value === '' ? null : Math.max(0, Math.min(10, num(value)));
+  const path = 'scores.'+dim;
+  try{
+    await homesCol.doc(id).update({ [path]: v===null ? FieldValue.delete() : v });
+  }catch(e){
+    console.error(e);
+    alert('Could not save rating — check your connection and try again.');
+  }
+}
+
+/* ── Backup ────────────────────────────────────────────────────────── */
+function exportData(){
+  const payload = { homes, criteria };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `home-search-log-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  document.getElementById('backupNote').textContent = `Backup saved — ${homes.length} homes, ${new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}`;
+}
+
+async function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    let importedHomes, importedCriteria = null;
+    if(Array.isArray(parsed)){
+      importedHomes = parsed;
+    } else if(parsed && Array.isArray(parsed.homes)){
+      importedHomes = parsed.homes;
+      importedCriteria = parsed.criteria || null;
+    } else {
+      throw new Error('Not a valid backup file');
+    }
+    if(homes.length > 0){
+      const ok = confirm(`This will replace the ${homes.length} homes currently in the log with the ${importedHomes.length} homes from this backup. Continue?`);
+      if(!ok) return;
+    }
+    const batch = db.batch();
+    homes.forEach(h => batch.delete(homesCol.doc(h.id)));
+    importedHomes.forEach(h => {
+      const id = h.id || uid();
+      const {id: _drop, ...rest} = h;
+      batch.set(homesCol.doc(id), rest);
+    });
+    await batch.commit();
+    if(importedCriteria){
+      await criteriaDoc.set(Object.assign(JSON.parse(JSON.stringify(DEFAULT_CRITERIA)), importedCriteria));
+    }
+    document.getElementById('backupNote').textContent = `Restored ${importedHomes.length} homes from backup.`;
+  }catch(e){
+    console.error(e);
+    alert('Could not read that file — make sure it\'s a backup exported from this same tool.');
+  }
+  event.target.value = '';
+}
+
+/* ── Filtering / sorting ──────────────────────────────────────────── */
+function setFilter(zone){
+  activeFilter = zone;
+  render();
+}
+function setSort(v){
+  activeSort = v;
+  render();
+}
+
+function specOk(h){
+  if(h.beds==null || h.baths==null || h.sqft==null || h.lot==null) return null;
+  return h.beds>=criteria.minBeds && h.baths>=criteria.minBaths && h.sqft>=criteria.minSqft && h.lot>=criteria.minLot;
+}
+function priceBandOk(h){
+  if(!h.zone || !criteria.zones[h.zone] || h.price==null) return null;
+  const [lo,hi] = criteria.zones[h.zone];
+  return h.price>=lo && h.price<=hi;
+}
+function weightedScore(h){
+  const s = h.scores||{};
+  for(const d of SCORE_DIMS){ if(s[d.key]==null) return null; }
+  const w = criteria.weights;
+  const total = SCORE_DIMS.reduce((sum,d)=> sum + (s[d.key]/10)*w[d.key], 0);
+  return Math.round(total);
+}
+
+function specBadges(h){
+  const badges = [];
+  const ok = specOk(h);
+  if(ok===null){
+    if(h.beds!=null || h.baths!=null || h.sqft!=null || h.lot!=null){
+      badges.push(`<span class="badge neutral">Spec: partial</span>`);
+    }
+  } else {
+    badges.push(`<span class="badge ${ok?'moss':'rust'}">${ok?'Meets spec':'Below spec'}</span>`);
+  }
+  const band = priceBandOk(h);
+  if(band!==null){
+    badges.push(`<span class="badge ${band?'moss':'gold'}">${band?'In price band':'Outside band'}</span>`);
+  }
+  if(h.zone){
+    badges.push(`<span class="badge slate">${h.zone}</span>`);
+  }
+  const score = weightedScore(h);
+  if(score!==null){
+    badges.push(`<span class="badge gold">Score ${score}/100</span>`);
+  }
+  return badges.join('');
+}
+
+function renderStats(){
+  const total = homes.length;
+  const toured = homes.filter(h=>h.status==='Toured').length;
+  const inBand = homes.filter(h=>priceBandOk(h)===true).length;
+  const specMet = homes.filter(h=>specOk(h)===true).length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-n">${total}</div><div class="stat-l">Tracked</div></div>
+    <div class="stat"><div class="stat-n">${inBand}</div><div class="stat-l">In price band</div></div>
+    <div class="stat"><div class="stat-n">${specMet}</div><div class="stat-l">Meet spec</div></div>
+    <div class="stat"><div class="stat-n">${toured}</div><div class="stat-l">Toured</div></div>
+  `;
+}
+
+function renderFilters(){
+  const zones = ["All","Redmond HS","Lake Washington HS","Newport HS","Interlake HS","Other"];
+  document.getElementById('filters').innerHTML = zones.map(z=>
+    `<button class="chip ${activeFilter===z?'active':''}" onclick="setFilter('${z}')">${z}</button>`
+  ).join('');
+}
+
+function timeAgo(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' · ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+function sortHomes(list){
+  const arr = list.slice();
+  if(activeSort==='price_asc') arr.sort((a,b)=> (a.price??Infinity) - (b.price??Infinity));
+  else if(activeSort==='price_desc') arr.sort((a,b)=> (b.price??-Infinity) - (a.price??-Infinity));
+  else if(activeSort==='score_desc') arr.sort((a,b)=> (weightedScore(b)??-1) - (weightedScore(a)??-1));
+  else arr.sort((a,b)=> new Date(b.addedDate) - new Date(a.addedDate));
+  return arr;
+}
+
+function render(){
+  renderStats();
+  renderFilters();
+  document.getElementById('sortSel').value = activeSort;
+  let filtered = activeFilter==='All' ? homes : homes.filter(h=>h.zone===activeFilter);
+  filtered = sortHomes(filtered);
+  document.getElementById('listLabel').textContent = activeFilter==='All' ? `All homes (${homes.length})` : `${activeFilter} (${filtered.length})`;
+
+  const list = document.getElementById('list');
+  if(filtered.length===0){
+    list.innerHTML = `<div class="empty"><div class="big">Nothing logged yet</div>Add the first home you want to track.</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(h=>{
+    const metaBits = [];
+    if(h.beds!=null) metaBits.push(`<span class="m">${h.beds} bd</span>`);
+    if(h.baths!=null) metaBits.push(`<span class="m">${h.baths} ba</span>`);
+    if(h.sqft!=null) metaBits.push(`<span class="m">${h.sqft.toLocaleString()} sqft</span>`);
+    if(h.lot!=null) metaBits.push(`<span class="m">${h.lot.toLocaleString()} sqft lot</span>`);
+    if(h.ms) metaBits.push(`<span class="m">${h.ms}</span>`);
+    if(h.yearBuilt) metaBits.push(`<span class="m">Built ${h.yearBuilt}</span>`);
+    const noDetails = h.beds==null && h.baths==null && h.sqft==null && h.lot==null && !h.zone && h.price==null;
+
+    const notesHtml = (h.notes||[]).map(n=>`
+      <div class="note">
+        <div class="note-author">${n.author}</div>
+        <div class="note-text">${n.text}</div>
+        <div class="note-date">${timeAgo(n.date)}</div>
+      </div>
+    `).join('');
+
+    const s = h.scores||{};
+    const total = weightedScore(h);
+    const scoreFieldsHtml = SCORE_DIMS.map(d => `
+      <div class="score-field">
+        <label>${d.label}</label>
+        <input type="text" inputmode="numeric" placeholder="0–10" value="${s[d.key]??''}"
+          onchange="updateScore('${h.id}','${d.key}', this.value)">
+      </div>
+    `).join('');
+
+    return `
+    <div class="card">
+      <div class="card-top">
+        <div class="card-head">
+          <div class="addr">${h.link ? `<a href="${h.link}" target="_blank" rel="noopener">${h.address}</a>` : h.address}</div>
+          <div class="price">${fmtMoney(h.price)}</div>
+        </div>
+        ${metaBits.length ? `<div class="meta-row">${metaBits.join('')}</div>` : ''}
+        ${noDetails ? `<div class="meta-empty">No details yet — add price, zone, beds/baths etc. from Edit.</div>` : ''}
+        <div class="badges">${specBadges(h)}</div>
+      </div>
+      <div class="card-body">
+        <div class="status-row">
+          <select onchange="updateStatus('${h.id}', this.value)">
+            ${STATUSES.map(st=>`<option value="${st}" ${h.status===st?'selected':''}>${st}</option>`).join('')}
+          </select>
+          <span class="icon-btn" onclick="editHome('${h.id}')">Edit</span>
+          <span class="icon-btn" onclick="deleteHome('${h.id}')">Remove</span>
+        </div>
+        <div class="notes-log">${notesHtml}</div>
+        <div class="add-note">
+          <input type="text" id="noteinput_${h.id}" placeholder="Add a note as ${currentWho}…" onkeydown="if(event.key==='Enter') addNote('${h.id}')">
+          <button class="btn small" onclick="addNote('${h.id}')">Add</button>
+        </div>
+        <div class="score-block">
+          <div class="score-head">
+            <span class="score-title">Rate this home</span>
+            <span class="score-total ${total===null?'pending':''}">${total===null ? 'Score pending — rate all four' : 'Weighted score: '+total+'/100'}</span>
+          </div>
+          <div class="score-grid">${scoreFieldsHtml}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Criteria tab ─────────────────────────────────────────────────── */
+function populateCriteriaControls(){
+  document.getElementById('sl_minBeds').value = criteria.minBeds;
+  document.getElementById('sl_minBaths').value = criteria.minBaths;
+  document.getElementById('sl_minSqft').value = criteria.minSqft;
+  document.getElementById('sl_minLot').value = criteria.minLot;
+  document.getElementById('sl_wSchool').value = criteria.weights.schoolQuality;
+  document.getElementById('sl_wLife').value = criteria.weights.qualityOfLife;
+  document.getElementById('sl_wConfig').value = criteria.weights.homeConfig;
+  document.getElementById('sl_wWork').value = criteria.weights.workProximity;
+  renderZoneBandRows();
+  refreshCriteriaLabels();
+}
+
+function renderZoneBandRows(){
+  const zones = Object.keys(criteria.zones);
+  document.getElementById('zoneBandRows').innerHTML = zones.map(z=>{
+    const [lo,hi] = criteria.zones[z];
+    const safeId = z.replace(/[^a-zA-Z0-9]/g,'');
+    return `
+    <div class="zone-band-row">
+      <div class="zone-band-label">${z}</div>
+      <input type="text" inputmode="numeric" id="band_lo_${safeId}" value="${lo}">
+      <input type="text" inputmode="numeric" id="band_hi_${safeId}" value="${hi}">
+    </div>`;
+  }).join('');
+}
+
+function refreshCriteriaLabels(){
+  document.getElementById('val_minBeds').textContent = document.getElementById('sl_minBeds').value;
+  document.getElementById('val_minBaths').textContent = document.getElementById('sl_minBaths').value;
+  document.getElementById('val_minSqft').textContent = Number(document.getElementById('sl_minSqft').value).toLocaleString();
+  document.getElementById('val_minLot').textContent = Number(document.getElementById('sl_minLot').value).toLocaleString();
+
+  const wSchool = Number(document.getElementById('sl_wSchool').value);
+  const wLife = Number(document.getElementById('sl_wLife').value);
+  const wConfig = Number(document.getElementById('sl_wConfig').value);
+  const wWork = Number(document.getElementById('sl_wWork').value);
+  document.getElementById('val_wSchool').textContent = wSchool+'%';
+  document.getElementById('val_wLife').textContent = wLife+'%';
+  document.getElementById('val_wConfig').textContent = wConfig+'%';
+  document.getElementById('val_wWork').textContent = wWork+'%';
+
+  const total = wSchool+wLife+wConfig+wWork;
+  const totalEl = document.getElementById('weightTotal');
+  totalEl.textContent = 'Total: '+total+'%';
+  totalEl.classList.toggle('ok', total===100);
+  totalEl.classList.toggle('warn', total!==100);
+}
+
+function onCriteriaSliderInput(){
+  refreshCriteriaLabels();
+  document.getElementById('critSaveNote').textContent = 'Unsaved changes';
+}
+
+async function saveCriteria(){
+  const newCriteria = JSON.parse(JSON.stringify(criteria));
+  newCriteria.minBeds = Number(document.getElementById('sl_minBeds').value);
+  newCriteria.minBaths = Number(document.getElementById('sl_minBaths').value);
+  newCriteria.minSqft = Number(document.getElementById('sl_minSqft').value);
+  newCriteria.minLot = Number(document.getElementById('sl_minLot').value);
+
+  Object.keys(newCriteria.zones).forEach(z=>{
+    const safeId = z.replace(/[^a-zA-Z0-9]/g,'');
+    const lo = num(document.getElementById('band_lo_'+safeId).value);
+    const hi = num(document.getElementById('band_hi_'+safeId).value);
+    if(lo!=null && hi!=null) newCriteria.zones[z] = [lo,hi];
+  });
+
+  const wSchool = Number(document.getElementById('sl_wSchool').value);
+  const wLife = Number(document.getElementById('sl_wLife').value);
+  const wConfig = Number(document.getElementById('sl_wConfig').value);
+  const wWork = Number(document.getElementById('sl_wWork').value);
+  const total = wSchool+wLife+wConfig+wWork;
+  if(total !== 100){
+    const ok = confirm(`Your weights add up to ${total}%, not 100%. Scores will still compute proportionally, but they won't be on a clean 0–100 scale. Save anyway?`);
+    if(!ok) return;
+  }
+  newCriteria.weights = { schoolQuality:wSchool, qualityOfLife:wLife, homeConfig:wConfig, workProximity:wWork };
+
+  try{
+    await criteriaDoc.set(newCriteria);
+    document.getElementById('critSaveNote').textContent = 'Saved ✓';
+    setTimeout(()=>{ document.getElementById('critSaveNote').textContent=''; }, 2500);
+  }catch(e){
+    console.error(e);
+    alert('Could not save criteria — check your connection and try again.');
+  }
+}
+
+async function resetCriteriaDefaults(){
+  const ok = confirm('Reset all criteria (spec minimums, price bands, weights) to the original defaults?');
+  if(!ok) return;
+  try{
+    await criteriaDoc.set(DEFAULT_CRITERIA);
+    document.getElementById('critSaveNote').textContent = 'Reset ✓';
+    setTimeout(()=>{ document.getElementById('critSaveNote').textContent=''; }, 2500);
+  }catch(e){
+    console.error(e);
+    alert('Could not reset — check your connection and try again.');
+  }
+}
+
+/* ── Bookmarklet ──────────────────────────────────────────────────── */
+const BOOKMARKLET_SRC = "javascript:(function(){try{function getMeta(n){var e=document.querySelector('meta[name=\"'+n+'\"]');return e?e.getAttribute('content'):null;}function num(s){if(s===null||s===undefined)return null;var v=parseFloat(String(s).replace(/[^0-9.]/g,''));return isNaN(v)?null:v;}var addr=[getMeta('twitter:text:street_address'),getMeta('twitter:text:city'),getMeta('twitter:text:state_code'),getMeta('twitter:text:zip')].filter(Boolean).join(', ');var price=num(getMeta('twitter:text:price'));var beds=num(getMeta('twitter:text:beds'));var baths=num(getMeta('twitter:text:baths'));var sqft=num(getMeta('twitter:text:sqft'));var bodyText=document.body.innerText||'';var lotMatch=bodyText.match(/Lot size\\s*\\n*\\s*([\\d,]+)\\s*Sq\\.?\\s*Ft/i);var lot=lotMatch?num(lotMatch[1]):null;var yearMatch=bodyText.match(/Year built\\s*\\n*\\s*(\\d{4})/i);var yearBuilt=yearMatch?num(yearMatch[1]):null;var hs=null,ms=null;var schoolRe=/([A-Za-z0-9'.\\-\\s]+?(Elementary|Middle|High)[A-Za-z\\s]*)\\n+\\s*(Public|Private)[^\\n]*Assigned/gi;var m;while((m=schoolRe.exec(bodyText))!==null){var name=m[1].replace(/\\s+/g,' ').trim();var level=m[2];if(level==='High'&&!hs)hs=name;if(level==='Middle'&&!ms)ms=name;}function mapZone(n){if(!n)return '';if(/redmond/i.test(n))return 'Redmond HS';if(/lake washington/i.test(n))return 'Lake Washington HS';if(/newport/i.test(n))return 'Newport HS';if(/interlake/i.test(n))return 'Interlake HS';return 'Other';}var zone=mapZone(hs);if(!addr&&!price&&!beds){alert('Could not find listing details on this page. Open the Redfin listing page directly, then try again.');return;}var fields={};function setStr(k,v){fields[k]={stringValue:(v===null||v===undefined)?'':String(v)};}function setNum(k,v){fields[k]=(v===null||v===undefined)?{nullValue:null}:{doubleValue:v};}setStr('address',addr||document.title);setStr('link',location.href.split('?')[0]);setNum('price',price);setNum('beds',beds);setNum('baths',baths);setNum('sqft',sqft);setNum('lot',lot);setNum('yearBuilt',yearBuilt);setStr('zone',zone);setStr('ms',ms||'');setStr('status','Not yet toured');fields.notes={arrayValue:{}};fields.scores={mapValue:{}};setStr('addedBy','Bookmarklet');setStr('addedDate',new Date().toISOString());fetch('https://firestore.googleapis.com/v1/projects/home-search-12693/databases/(default)/documents/homes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:fields})}).then(function(r){if(r.ok){alert('Added to Home Search Log: '+(addr||document.title)+(zone?(' | HS: '+zone):'')+(price?(' | $'+price.toLocaleString()):''));}else{r.text().then(function(t){alert('Could not save (HTTP '+r.status+'). '+t.slice(0,200));});}}).catch(function(e){alert('Network error: '+e.message);});}catch(e){alert('Bookmarklet error: '+e.message);}})();";
+
+function copyBookmarklet(){
+  const note = document.getElementById('bookmarkletCopyNote');
+  const done = () => { note.textContent = 'Copied ✓ — paste into the bookmark\'s Address field'; setTimeout(()=>{note.textContent='';}, 4000); };
+  const fail = () => { note.textContent = 'Copy failed — long-press the link above and copy its URL instead'; };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(BOOKMARKLET_SRC).then(done).catch(fail);
+  } else {
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = BOOKMARKLET_SRC;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done();
+    }catch(e){ fail(); }
+  }
+}
+document.getElementById('bookmarkletLink').setAttribute('href', BOOKMARKLET_SRC);
+
+/* ── Boot ─────────────────────────────────────────────────────────── */
+setConn(null, 'Connecting…');
+render();
+</script>
+</body>
+</html>
