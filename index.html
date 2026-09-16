@@ -986,10 +986,14 @@ function renderMapMarkers(){
       const marker = L.circleMarker([h.lat, h.lng], {
         radius: 8, color:'#2B2520', weight:1, fillColor: color, fillOpacity: 0.85
       }).addTo(mapMarkersLayer);
+      const addrHtml = h.link
+        ? '<a href="'+escapeHtml(h.link)+'" target="_blank" rel="noopener">'+escapeHtml(h.address)+'</a>'
+        : escapeHtml(h.address);
       const popupHtml =
-        '<strong>'+escapeHtml(h.address)+'</strong><br>'+
+        '<strong>'+addrHtml+'</strong><br>'+
         (h.price ? fmtMoney(h.price) : '') + (h.zone ? (' · '+escapeHtml(h.zone)) : '') + '<br>' +
-        '<span style="color:#6B5F4F;">'+escapeHtml(h.status)+'</span>';
+        '<span style="color:#6B5F4F;">'+escapeHtml(h.status)+'</span>' +
+        (h.link ? '<br><a href="'+escapeHtml(h.link)+'" target="_blank" rel="noopener">View on Redfin →</a>' : '');
       marker.bindPopup(popupHtml);
       pts.push([h.lat, h.lng]);
     } else if(h.address && !h.geocodeFailed){
