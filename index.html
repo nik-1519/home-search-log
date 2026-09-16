@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjM2IiBmaWxsPSIjMkIyNTIwIi8+PHBhdGggZD0iTTkwIDM0IEwxNDYgODAgTDEzNCA4MCBMMTM0IDE0MiBMOTggMTQyIEw5OCAxMDggTDgyIDEwOCBMODIgMTQyIEw0NiAxNDIgTDQ2IDgwIEwzNCA4MCBaIiBmaWxsPSIjRjNFREREiIvPjwvc3ZnPg==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
   :root{
     --paper:#F3EDDF; --paper2:#EAE1C9; --paper3:#E1D5B4;
@@ -216,6 +217,14 @@
   .zone-band-head span{font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink3);}
   .crit-savebar{display:flex; justify-content:flex-end; align-items:center; gap:10px;}
   .crit-savenote{font-size:11.5px; color:var(--ink3);}
+
+  /* ---- map tab ---- */
+  .map-legend{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:12px; font-size:12px; color:var(--ink2);}
+  .legend-dot{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px; vertical-align:middle; border:1px solid rgba(0,0,0,.25);}
+  .map-status{font-size:12px; color:var(--ink3); margin-bottom:10px; min-height:16px;}
+  .map-container{height:480px; width:100%; border-radius:6px; border:1px solid var(--line2); background:var(--paper2);}
+  .map-unmapped{font-size:12px; color:var(--ink3); margin-top:10px; line-height:1.6;}
+  .leaflet-popup-content{font-family:'Public Sans',sans-serif; font-size:13px; color:var(--ink);}
 </style>
 </head>
 <body>
@@ -242,6 +251,7 @@
 
     <div class="tabs">
       <button class="tab active" id="tabHomes" onclick="setTab('homes')">Homes</button>
+      <button class="tab" id="tabMap" onclick="setTab('map')">Map</button>
       <button class="tab" id="tabCriteria" onclick="setTab('criteria')">Criteria</button>
     </div>
   </header>
@@ -347,6 +357,14 @@
     <footer>Synced live via Firebase — updates from either phone appear automatically, no refresh needed. Verify any zone at the address level with LWSD/BSD before offering.</footer>
   </div>
 
+  <!-- ══════════ MAP TAB ══════════ -->
+  <div class="tab-panel" id="panel-map">
+    <div class="map-legend" id="mapLegend"></div>
+    <div class="map-status" id="mapStatus"></div>
+    <div class="map-container" id="mapDiv"></div>
+    <div class="map-unmapped" id="mapUnmapped"></div>
+  </div>
+
   <!-- ══════════ CRITERIA TAB ══════════ -->
   <div class="tab-panel" id="panel-criteria">
 
@@ -417,6 +435,7 @@
 <!-- Firebase (compat SDK — no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBNTHZWX07oIOu05VnXpgflNXByQPJG9yY",
@@ -450,6 +469,19 @@ const SCORE_DIMS = [
   { key:"homeConfig", label:"Home config" },
   { key:"workProximity", label:"Work proximity" },
 ];
+const ZONE_COLORS = {
+  "Redmond HS": "#A8462F",
+  "Lake Washington HS": "#3F5266",
+  "Newport HS": "#9C7A2E",
+  "Interlake HS": "#4F6444",
+  "Other": "#6B5F4F",
+  "": "#B7A784",
+};
+
+let leafletMap = null;
+let mapMarkersLayer = null;
+let mapInitialized = false;
+let geocodeQueueRunning = false;
 
 let homes = [];
 let criteria = JSON.parse(JSON.stringify(DEFAULT_CRITERIA));
@@ -474,9 +506,16 @@ function setWho(name){
 
 function setTab(name){
   document.getElementById('tabHomes').classList.toggle('active', name==='homes');
+  document.getElementById('tabMap').classList.toggle('active', name==='map');
   document.getElementById('tabCriteria').classList.toggle('active', name==='criteria');
   document.getElementById('panel-homes').classList.toggle('active', name==='homes');
+  document.getElementById('panel-map').classList.toggle('active', name==='map');
   document.getElementById('panel-criteria').classList.toggle('active', name==='criteria');
+  if(name==='map'){
+    ensureMapInitialized();
+    renderMapMarkers();
+    setTimeout(function(){ if(leafletMap) leafletMap.invalidateSize(); }, 80);
+  }
 }
 
 function num(v){
@@ -495,6 +534,8 @@ homesCol.onSnapshot(
     homes = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
     setConn('live','Live');
     render();
+    geocodeMissing();
+    if(mapInitialized) renderMapMarkers();
   },
   err => {
     console.error('homes listener error', err);
@@ -614,6 +655,8 @@ async function saveHome(){
   if(!editingId) return;
   const address = document.getElementById('f_address').value.trim();
   if(!address){ alert('Address can\'t be empty.'); return; }
+  const existing = homes.find(x=>x.id===editingId);
+  const addressChanged = existing && existing.address !== address;
   const data = {
     address,
     price: num(document.getElementById('f_price').value),
@@ -625,6 +668,11 @@ async function saveHome(){
     ms: document.getElementById('f_ms').value.trim(),
     link: document.getElementById('f_link').value.trim(),
   };
+  if(addressChanged){
+    data.lat = FieldValue.delete();
+    data.lng = FieldValue.delete();
+    data.geocodeFailed = FieldValue.delete();
+  }
   try{
     await homesCol.doc(editingId).update(data);
     closeForm();
@@ -893,6 +941,104 @@ function render(){
       </div>
     </div>`;
   }).join('');
+}
+
+/* ── Map ──────────────────────────────────────────────────────────── */
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function renderMapLegend(){
+  const entries = [
+    ["Redmond HS", ZONE_COLORS["Redmond HS"]],
+    ["Lake Washington HS", ZONE_COLORS["Lake Washington HS"]],
+    ["Newport HS", ZONE_COLORS["Newport HS"]],
+    ["Interlake HS", ZONE_COLORS["Interlake HS"]],
+    ["Other / not set", ZONE_COLORS["Other"]],
+  ];
+  document.getElementById('mapLegend').innerHTML = entries.map(function(e){
+    return '<span><span class="legend-dot" style="background:'+e[1]+';"></span>'+e[0]+'</span>';
+  }).join('');
+}
+
+function ensureMapInitialized(){
+  if(mapInitialized) return;
+  renderMapLegend();
+  leafletMap = L.map('mapDiv').setView([47.6740, -122.1215], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(leafletMap);
+  mapMarkersLayer = L.layerGroup().addTo(leafletMap);
+  mapInitialized = true;
+}
+
+function renderMapMarkers(){
+  if(!mapInitialized) return;
+  mapMarkersLayer.clearLayers();
+  const pts = [];
+  const unmapped = [];
+  homes.forEach(function(h){
+    if(h.lat!=null && h.lng!=null){
+      const color = ZONE_COLORS[h.zone||''] || ZONE_COLORS['Other'];
+      const marker = L.circleMarker([h.lat, h.lng], {
+        radius: 8, color:'#2B2520', weight:1, fillColor: color, fillOpacity: 0.85
+      }).addTo(mapMarkersLayer);
+      const popupHtml =
+        '<strong>'+escapeHtml(h.address)+'</strong><br>'+
+        (h.price ? fmtMoney(h.price) : '') + (h.zone ? (' · '+escapeHtml(h.zone)) : '') + '<br>' +
+        '<span style="color:#6B5F4F;">'+escapeHtml(h.status)+'</span>';
+      marker.bindPopup(popupHtml);
+      pts.push([h.lat, h.lng]);
+    } else if(h.address && !h.geocodeFailed){
+      unmapped.push(h.address); // still queued/in progress
+    } else if(h.geocodeFailed){
+      unmapped.push(h.address + ' (could not locate — check address on Edit)');
+    }
+  });
+  document.getElementById('mapUnmapped').innerHTML = unmapped.length
+    ? ('Not shown on map: ' + unmapped.map(escapeHtml).join('; '))
+    : '';
+  if(pts.length){
+    try{ leafletMap.fitBounds(pts, {padding:[24,24], maxZoom:13}); }catch(e){}
+  }
+}
+
+function geocodeMissing(){
+  if(geocodeQueueRunning) return;
+  const todo = homes.filter(function(h){
+    return h.address && (h.lat==null || h.lng==null) && !h.geocodeFailed;
+  });
+  if(!todo.length) return;
+  geocodeQueueRunning = true;
+  const statusEl = document.getElementById('mapStatus');
+  let i = 0;
+  function next(){
+    if(i >= todo.length){
+      geocodeQueueRunning = false;
+      statusEl.textContent = '';
+      if(mapInitialized) renderMapMarkers();
+      return;
+    }
+    const h = todo[i];
+    statusEl.textContent = 'Locating '+(i+1)+' of '+todo.length+' on the map…';
+    const q = encodeURIComponent(h.address);
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+q)
+      .then(function(r){ return r.json(); })
+      .then(function(results){
+        if(results && results[0]){
+          const lat = parseFloat(results[0].lat);
+          const lng = parseFloat(results[0].lon);
+          return homesCol.doc(h.id).update({lat:lat, lng:lng});
+        }
+        return homesCol.doc(h.id).update({geocodeFailed:true});
+      })
+      .catch(function(e){ console.error('geocode error', e); })
+      .then(function(){ i++; setTimeout(next, 1100); });
+  }
+  next();
 }
 
 /* ── Criteria tab ─────────────────────────────────────────────────── */
